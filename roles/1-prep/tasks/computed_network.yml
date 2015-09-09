@@ -13,9 +13,10 @@
 
 # WIRELESS -- if any wireless is detected as gateway, it becomes WAN
 - name: Look for any wireless interfaces
+  shell: "cat /proc/net/wireless | grep -v -e Inter -e face | gawk -F: '{print $1}' | head -n1"
   register: wireless_list
-  shell: "ls -la /sys/class/net/*/phy80211 | awk -F / '{print $5}'"
   ignore_errors: True
+  changed_when: False
 
 # maybe never TODO: deal with more that one wireless device last match wins
 - name: Set the discovered wireless, if found
@@ -41,7 +42,7 @@
 
 # LAN - pick non WAN's
 - name: Create list of  LAN (non wan) ifaces
-  shell: "/sbin/ip link show | grep -v -e wwlan -e ppp -e lo -e br0: -e tun -e {{ discovered_wan_iface }}| grep mtu | gawk -F: '{print $2}' "
+  shell: "/sbin/ip link show | grep -v -e wwlan -e ppp -e lo -e br0: -e tun -e {{ xsce_wan_iface }}| grep mtu | gawk -F: '{print $2}' "
   register: lan_list_result
   ignore_errors: True
   changed_when: false
@@ -77,7 +78,7 @@
 - name: Set the variable for wireless_iface if present
   set_fact:
        xsce_wireless_lan_iface: "{{ discovered_wireless_iface }}"
-  when: discovered_wireless_iface != "none"
+  when: discovered_wireless_iface != "none" and discovered_wireless_iface != xsce_wan_iface
 
 # use value only if present
 - name: Setting detected lan
@@ -85,10 +86,10 @@
     xsce_lan_iface: "{{ discovered_lan_iface }}"
   when: 'discovered_lan_iface != "none" and num_lan_interfaces == "1"'
 
-- name: 2 devices on the LAN - use bridging
+- name: 2 or more devices on the LAN - use bridging
   set_fact:
      xsce_lan_iface: br0
-  when: 'discovered_lan_iface != "none" and num_lan_interfaces == "2"'
+  when: 'discovered_lan_iface != "none" and num_lan_interfaces >= "2"'
 
 - name: WiFi is on the LAN - use bridging
   set_fact:
