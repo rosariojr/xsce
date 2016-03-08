@@ -12,6 +12,59 @@ icp_port 0
 #  Access Control Lists
 #  These are used throughout this file
 #
+#######################################
+
+## Media Streams
+# MediaPlayer MMS protocol
+
+acl media rep_mime_type mms
+acl mediapr url_regex divplayer mediastream ^mms://
+
+## active stream Format (windows media player)
+acl media rep_mime_type x-ms-asf
+acl mediapr1 urlpath_regex \.(afx|asf) (\?.*)?$
+
+## Flash Video Format
+acl media rep_mime_type video/flv video/x-flv
+acl mediapr2 urlpath_regex \.flv(\?.*)?$
+
+## Flash general media scripts (animantio)
+#
+acl media rep_mime_type application/x-shockwave-flash
+acl mediapr3 urlpath_regex \.swf(\?.*)?$
+
+#others uknown formats
+#
+acl media rep_mime_type ms-hdr
+acl media rep_mime_type x-fcs
+
+http_access deny mediapr mediapr1 mediapr2 mediapr3
+http_access deny media
+
+#### youtube videos block
+#
+acl youtube_domains dstdomain .youtube.com .googlevideo.com .yting.com
+
+## G services authentication domian
+#
+acl gLogin dstdomain accounts.youtube.com
+
+http_access deny youtube_domains !gLogin
+
+
+
+
+
+##horarios
+#
+acl regular_days time MTWHF 07:30-16:30
+
+## https block
+#
+acl secure proto https
+http_access deny secure
+
+
 #acl manager proto cache_object
 acl school src 172.18.0.0/16
 #acl localhost src 127.0.0.1/32
@@ -179,7 +232,7 @@ http_access allow manager localhost
 http_access deny manager
 
 http_access deny !Safe_ports
-http_access allow school
+http_access allow school regular_days
 http_access allow localhost
 http_access deny all
 
